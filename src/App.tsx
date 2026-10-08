@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { downloadState, loadState, readStateFile, saveState } from './storage'
 import type {
   AppState,
   Decision,
@@ -12,8 +13,6 @@ import type {
 
 type Page = 'overview' | 'projects' | 'portfolio' | 'review'
 type ProjectTab = 'overview' | 'tasks' | 'hypotheses' | 'experiments' | 'decisions'
-
-const STORAGE_KEY = 'project-genome-state-v1'
 
 const stageMeta: Record<ProjectStage, { label: string; tone: string }> = {
   idea: { label: '想法', tone: 'gray' },
@@ -167,18 +166,8 @@ function bestNextAction(project: Project) {
   }
 }
 
-function loadState(): AppState {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return JSON.parse(raw) as AppState
-  } catch {
-    // fallback to seed data
-  }
-  return seedState
-}
-
 export default function App() {
-  const [state, setState] = useState<AppState>(loadState)
+  const [state, setState] = useState<AppState>(() => loadState(seedState))
   const [page, setPage] = useState<Page>('overview')
   const [selectedId, setSelectedId] = useState('genome')
   const [projectTab, setProjectTab] = useState<ProjectTab>('overview')
@@ -188,6 +177,8 @@ export default function App() {
   const [quickAddType, setQuickAddType] = useState<'task' | 'hypothesis' | 'experiment' | 'decision'>('task')
   const [draggedTask, setDraggedTask] = useState<string | null>(null)
   const [mutation, setMutation] = useState<{ title: string; body: string } | null>(null)
+  const importInputRef = useRef<HTMLInputElement>(null)
+  const [dataNotice, setDataNotice] = useState('仅保存在当前浏览器')
   const [newProject, setNewProject] = useState({
     name: '',
     description: '',
@@ -196,7 +187,7 @@ export default function App() {
   })
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    saveState(state)
   }, [state])
 
   const selected = state.projects.find((project) => project.id === selectedId) ?? state.projects[0]
@@ -375,6 +366,31 @@ export default function App() {
             <h1>{page === 'overview' ? '你的项目应该把注意力放在哪里？' : page === 'portfolio' ? '项目组合' : page === 'review' ? 'AI 项目复盘' : selected?.name}</h1>
           </div>
           <div className="topbar-actions">
+            <div className="data-actions">
+              <button className="icon-button" title="导出项目数据" onClick={() => { downloadState(state); setDataNotice('已导出 JSON 备份') }}>导出</button>
+              <button className="icon-button" title="导入项目数据" onClick={() => importInputRef.current?.click()}>导入</button>
+              <input
+                ref={importInputRef}
+                className="hidden-input"
+                type="file"
+                accept="application/json,.json"
+                onChange={async (event) => {
+                  const file = event.target.files?.[0]
+                  event.currentTarget.value = ''
+                  if (!file) return
+                  try {
+                    const imported = await readStateFile(file)
+                    setState(imported)
+                    setSelectedId(imported.projects[0]?.id ?? '')
+                    setPage('overview')
+                    setDataNotice('已导入项目数据')
+                  } catch (error) {
+                    setDataNotice(error instanceof Error ? error.message : '导入失败')
+                  }
+                }}
+              />
+              <span className="data-notice">{dataNotice}</span>
+            </div>
             <label className="search">
               <span>⌕</span>
               <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="搜索项目…" />
