@@ -1,24 +1,21 @@
 # Project Genome
 
-> AI 驱动的项目管理与决策工具：不是更漂亮的 Todo，而是帮助你判断“为什么做、下一步做什么、什么时候停止”。
+> AI 驱动的纯前端项目管理与决策工具：不是更漂亮的 Todo，而是帮助你判断“为什么做、下一步做什么、什么时候停止”。
 
-## 当前状态
+## 当前实现
 
-MVP 采用 Local First 架构，当前已经实现一个可运行的项目管理工作台：
+Project Genome 采用 **Pure Frontend / Static Web App** 架构，所有产品逻辑直接运行在浏览器：
 
-- 项目总览 / 项目雷达
-- Project Opportunity / Health 评分
-- 项目阶段管理
-- Kanban 任务板与拖拽
-- Hypothesis 假设管理
-- Experiment 实验记录
-- Decision 决策日志
-- AI Critic（当前为本地规则引擎，可替换真实模型）
-- Project Mutation 项目变异原型
-- 项目组合视图 / Attention Allocation
-- 本地持久化（localStorage）
+- React + TypeScript + Vite
+- 无后端
+- 无 Rust / Tauri
+- 无服务器数据库
+- localStorage 本地数据层
+- JSON 导入 / 导出备份
+- 本地 AI Critic / Mutation 规则引擎
+- GitHub Pages 静态部署
 
-## 本地开发
+## 本地运行
 
 需要 Node.js 20+。
 
@@ -27,11 +24,45 @@ npm install
 npm run dev
 ```
 
-构建：
+生产构建：
 
 ```bash
 npm run build
 ```
+
+## 架构
+
+```
+Browser
+├── React UI
+├── Project Engine
+│   ├── Opportunity Score
+│   ├── Health Score
+│   ├── Next Action
+│   └── Review
+├── Local Data
+│   └── localStorage
+├── JSON Backup
+│   ├── Export
+│   └── Import
+└── Local Intelligence
+    ├── AI Critic (rule engine)
+    └── Mutation Engine
+```
+
+应用构建结果只是静态 HTML / CSS / JS / Asset，可以直接放到任意静态托管平台。
+
+## 数据安全模型
+
+默认项目数据只写入当前浏览器的 localStorage。
+
+因此：
+
+- 换浏览器不会自动共享数据。
+- 清除站点数据可能导致本地数据丢失。
+- 建议定期使用“导出”生成 JSON 备份。
+- 导入 JSON 会直接替换当前项目数据。
+- 不应把私有 API Key 硬编码进公开静态站点。
 
 ## 产品原则
 
@@ -41,12 +72,18 @@ npm run build
 4. 暂停 / 终止项目是正常决策。
 5. 项目应该能够产生新的项目。
 
-## 下一阶段
+## 后续演进
 
-- 接入 SQLite / Tauri，形成真正 Local First 数据层
-- GitHub / Obsidian 双向集成
-- 接入真实 AI Review
-- Evidence 证据对象与来源引用
+保持纯前端路线，优先演进：
+
+- IndexedDB：更大的项目 / Evidence 数据集
+- Service Worker / PWA：真正离线运行
+- GitHub API：由用户授权后在浏览器直连
+- 可选 AI Provider：用户自行配置 Endpoint / Key
+- Evidence 证据对象
 - Project Graph
-- Project Mutation 转项目
-- 周期性 Attention Allocation
+- Project Mutation 一键转项目
+
+## License
+
+MIT
